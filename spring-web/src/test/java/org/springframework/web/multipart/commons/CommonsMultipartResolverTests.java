@@ -103,6 +103,7 @@ public class CommonsMultipartResolverTests {
 		originalRequest.setContentType("multipart/form-data");
 		originalRequest.addHeader("Content-type", "multipart/form-data");
 		originalRequest.addParameter("getField", "getValue");
+		originalRequest.addParameter("sameField", "queryStringValue");
 		assertTrue(resolver.isMultipart(originalRequest));
 		MultipartHttpServletRequest request = resolver.resolveMultipart(originalRequest);
 
@@ -121,7 +122,7 @@ public class CommonsMultipartResolverTests {
 		while (parameterEnum.hasMoreElements()) {
 			parameterNames.add(parameterEnum.nextElement());
 		}
-		assertEquals(3, parameterNames.size());
+		assertEquals(4, parameterNames.size());
 		assertTrue(parameterNames.contains("field3"));
 		assertTrue(parameterNames.contains("field4"));
 		assertTrue(parameterNames.contains("getField"));
@@ -136,6 +137,8 @@ public class CommonsMultipartResolverTests {
 		assertTrue(parameterValues.contains("value5"));
 		assertEquals("value4", request.getParameter("field4"));
 		assertEquals("getValue", request.getParameter("getField"));
+		assertArrayEquals(new String[]{"queryStringValue", "multipartValue1", "multipartValue2"}, 
+				request.getParameterValues("sameField"));
 
 		List<String> parameterMapKeys = new ArrayList<>();
 		List<Object> parameterMapValues = new ArrayList<>();
@@ -144,14 +147,16 @@ public class CommonsMultipartResolverTests {
 			parameterMapKeys.add(key);
 			parameterMapValues.add(request.getParameterMap().get(key));
 		}
-		assertEquals(3, parameterMapKeys.size());
-		assertEquals(3, parameterMapValues.size());
+		assertEquals(4, parameterMapKeys.size());
+		assertEquals(4, parameterMapValues.size());
 		int field3Index = parameterMapKeys.indexOf("field3");
 		int field4Index = parameterMapKeys.indexOf("field4");
 		int getFieldIndex = parameterMapKeys.indexOf("getField");
+		int sameFieldIndex = parameterMapKeys.indexOf("sameField");
 		assertTrue(field3Index != -1);
 		assertTrue(field4Index != -1);
 		assertTrue(getFieldIndex != -1);
+		assertTrue(sameFieldIndex != -1);
 		parameterValues = Arrays.asList((String[]) parameterMapValues.get(field3Index));
 		assertEquals(1, parameterValues.size());
 		assertTrue(parameterValues.contains("value3"));
@@ -162,6 +167,11 @@ public class CommonsMultipartResolverTests {
 		parameterValues = Arrays.asList((String[]) parameterMapValues.get(getFieldIndex));
 		assertEquals(1, parameterValues.size());
 		assertTrue(parameterValues.contains("getValue"));
+		parameterValues = Arrays.asList((String[]) parameterMapValues.get(sameFieldIndex));
+		assertEquals(3, parameterValues.size());
+		assertTrue(parameterValues.contains("queryStringValue"));
+		assertTrue(parameterValues.contains("multipartValue1"));
+		assertTrue(parameterValues.contains("multipartValue2"));
 	}
 
 	private void doTestFiles(MultipartHttpServletRequest request) throws IOException {
@@ -389,6 +399,8 @@ public class CommonsMultipartResolverTests {
 					MockFileItem fileItem3 = new MockFileItem("field3", null, null, "value3");
 					MockFileItem fileItem4 = new MockFileItem("field4", "text/html; charset=iso-8859-1", null, "value4");
 					MockFileItem fileItem5 = new MockFileItem("field4", null, null, "value5");
+					MockFileItem fileItem6 = new MockFileItem("sameField", null, null, "multipartValue1");
+					MockFileItem fileItem7 = new MockFileItem("sameField", null, null, "multipartValue2");
 					fileItems.add(fileItem1);
 					fileItems.add(fileItem1x);
 					fileItems.add(fileItem2);
@@ -396,6 +408,8 @@ public class CommonsMultipartResolverTests {
 					fileItems.add(fileItem3);
 					fileItems.add(fileItem4);
 					fileItems.add(fileItem5);
+					fileItems.add(fileItem6);
+					fileItems.add(fileItem7);
 					return fileItems;
 				}
 			};

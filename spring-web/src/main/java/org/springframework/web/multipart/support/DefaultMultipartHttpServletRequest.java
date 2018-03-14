@@ -16,11 +16,13 @@
 
 package org.springframework.web.multipart.support;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import javax.servlet.http.HttpServletRequest;
 
@@ -87,14 +89,28 @@ public class DefaultMultipartHttpServletRequest extends AbstractMultipartHttpSer
 		}
 		return super.getParameter(name);
 	}
+	
+	private static String[] mergeTwoParameterValues(String[] val1, String[] val2) {
+		if (val1 == null) {
+			return val2;
+		}
+		if (val2 == null) {
+			return val1;
+		}
+		//merge them together before return
+		String[] merged = Arrays.copyOf(val1, val1.length + val2.length);
+		int offset = val1.length;
+		for (int i = 0; i < val2.length; i++) {
+			merged[offset + i] = val2[i];
+		}
+		return merged;
+	}
 
 	@Override
 	public String[] getParameterValues(String name) {
-		String[] values = getMultipartParameters().get(name);
-		if (values != null) {
-			return values;
-		}
-		return super.getParameterValues(name);
+		String[] valuesInMultipart = getMultipartParameters().get(name);
+		String[] valuesInQueryString = super.getParameterValues(name);
+		return mergeTwoParameterValues(valuesInQueryString, valuesInMultipart);
 	}
 
 	@Override
@@ -122,7 +138,16 @@ public class DefaultMultipartHttpServletRequest extends AbstractMultipartHttpSer
 
 		Map<String, String[]> paramMap = new LinkedHashMap<>();
 		paramMap.putAll(super.getParameterMap());
-		paramMap.putAll(multipartParameters);
+		for (Entry<String, String[]> entry : multipartParameters.entrySet()) {
+			if (!paramMap.containsKey(entry.getKey())) {
+				paramMap.put(entry.getKey(), entry.getValue());
+			}
+			else {
+				//merge values
+				paramMap.put(entry.getKey(), mergeTwoParameterValues(
+						paramMap.get(entry.getKey()), entry.getValue()));
+			}
+		}
 		return paramMap;
 	}
 
